@@ -6,7 +6,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { max-width: 900px; margin: auto; padding: 20px; }
+        body { max-width: 1000px; margin: auto; padding: 20px; }
         .hidden { display: none; }
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -32,6 +32,7 @@
     <div id="step2" class="hidden">
         <h4>📈 Bevétel hozzáadása</h4>
         <div class="row g-2 mb-3">
+            <div class="col"><input type="date" id="incomeDate" class="form-control"></div>
             <div class="col"><input type="text" id="incomeTitle" class="form-control" placeholder="Cím"></div>
             <div class="col"><input type="text" id="incomeAmount" class="form-control" placeholder="Összeg (Ft)" oninput="formatInput(this)"></div>
             <div class="col-auto"><button class="btn btn-success" onclick="addIncome()">➕</button></div>
@@ -46,6 +47,7 @@
     <div id="step3" class="hidden">
         <h4>📉 Kiadás hozzáadása</h4>
         <div class="row g-2 mb-3">
+            <div class="col"><input type="date" id="expenseDate" class="form-control"></div>
             <div class="col"><input type="text" id="expenseTitle" class="form-control" placeholder="Cím"></div>
             <div class="col"><input type="text" id="expenseAmount" class="form-control" placeholder="Összeg (Ft)" oninput="formatInput(this)"></div>
             <div class="col-auto"><button class="btn btn-danger" onclick="addExpense()">➕</button></div>
@@ -88,25 +90,31 @@ function formatInput(input) {
 }
 
 function addIncome() {
+    const date = document.getElementById('incomeDate').value;
     const title = document.getElementById('incomeTitle').value.trim();
     const amount = parseNumber(document.getElementById('incomeAmount').value);
-    if (!title || !amount) return;
+    if (!title || !amount || !date) return;
 
-    incomes.push({ title, amount });
-    document.getElementById('incomeList').innerHTML += `<li class="list-group-item d-flex justify-content-between"><span>${title}</span><span>${formatNumber(amount)} Ft</span></li>`;
+    incomes.push({ date, title, amount });
+    document.getElementById('incomeList').innerHTML += `<li class="list-group-item d-flex justify-content-between">
+        <span>${date} - ${title}</span><span>${formatNumber(amount)} Ft</span></li>`;
     updateTotals();
+    document.getElementById('incomeDate').value = '';
     document.getElementById('incomeTitle').value = '';
     document.getElementById('incomeAmount').value = '';
 }
 
 function addExpense() {
+    const date = document.getElementById('expenseDate').value;
     const title = document.getElementById('expenseTitle').value.trim();
     const amount = parseNumber(document.getElementById('expenseAmount').value);
-    if (!title || !amount) return;
+    if (!title || !amount || !date) return;
 
-    expenses.push({ title, amount });
-    document.getElementById('expenseList').innerHTML += `<li class="list-group-item d-flex justify-content-between"><span>${title}</span><span>${formatNumber(amount)} Ft</span></li>`;
+    expenses.push({ date, title, amount });
+    document.getElementById('expenseList').innerHTML += `<li class="list-group-item d-flex justify-content-between">
+        <span>${date} - ${title}</span><span>${formatNumber(amount)} Ft</span></li>`;
     updateTotals();
+    document.getElementById('expenseDate').value = '';
     document.getElementById('expenseTitle').value = '';
     document.getElementById('expenseAmount').value = '';
 }
@@ -130,23 +138,25 @@ function generateExcel() {
         ["Név", name],
         ["Hónap", month],
         [],
-        ["Bevétel", "Összeg (Ft)", "Kiadás", "Összeg (Ft)"]
+        ["Bevétel dátuma", "Bevétel", "Összeg (Ft)", "Kiadás dátuma", "Kiadás", "Összeg (Ft)"]
     ];
 
     const maxLen = Math.max(incomes.length, expenses.length);
     for (let i = 0; i < maxLen; i++) {
         data.push([
+            incomes[i] ? incomes[i].date : "",
             incomes[i] ? incomes[i].title : "",
             incomes[i] ? formatNumber(incomes[i].amount) : "",
+            expenses[i] ? expenses[i].date : "",
             expenses[i] ? expenses[i].title : "",
             expenses[i] ? formatNumber(expenses[i].amount) : ""
         ]);
     }
 
     data.push([]);
-    data.push(["Összes bevétel", formatNumber(totalIncome) + " Ft"]);
-    data.push(["Összes kiadás", formatNumber(totalExpense) + " Ft"]);
-    data.push(["Nebil tartozás", formatNumber(nebil) + " Ft"]);
+    data.push(["Összes bevétel", "", formatNumber(totalIncome) + " Ft"]);
+    data.push(["Összes kiadás", "", formatNumber(totalExpense) + " Ft"]);
+    data.push(["Nebil tartozás", "", formatNumber(nebil) + " Ft"]);
 
     const ws = XLSX.utils.aoa_to_sheet(data);
     const wb = XLSX.utils.book_new();
